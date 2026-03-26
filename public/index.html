@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>गणित प्रश्न पत्र जनरेटर | Math QS Generator</title>
+  <meta name="description" content="Upload a Math book and generate Hindi question papers using AI. Powered by Google Gemini." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Devanagari:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- KaTeX for Math Rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+  <!-- html2pdf.js for PDF Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Background Animation -->
+  <div class="bg-animation">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-content">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 40 40" fill="none">
+            <rect x="4" y="4" width="32" height="32" rx="8" stroke="currentColor" stroke-width="2.5"/>
+            <text x="20" y="27" text-anchor="middle" fill="currentColor" font-size="18" font-weight="700">π</text>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <h1>गणित QS जनरेटर</h1>
+          <p>AI-Powered Hindi Math Paper Generator</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Left Panel: Controls -->
+    <section class="controls-panel" id="controlsPanel">
+      <!-- API Key -->
+      <div class="card api-card">
+        <div class="card-header">
+          <span class="card-icon">🔑</span>
+          <h2>Gemini API Key</h2>
+        </div>
+        <div class="input-group">
+          <input type="password" id="apiKey" placeholder="Enter your Gemini API key..." autocomplete="off" />
+          <button class="toggle-visibility" id="toggleApiKey" title="Show/Hide">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- File Uploads -->
+      <div class="card upload-card">
+        <div class="card-header">
+          <span class="card-icon">📚</span>
+          <h2>पुस्तक अपलोड करें</h2>
+        </div>
+        <div class="upload-zone" id="bookUploadZone">
+          <div class="upload-icon">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M24 32V16m0 0l-8 8m8-8l8 8"/>
+              <rect x="6" y="6" width="36" height="36" rx="8"/>
+            </svg>
+          </div>
+          <p class="upload-text">PDF या Image खींचकर छोड़ें</p>
+          <p class="upload-subtext">या क्लिक करके चुनें (PDF, PNG, JPG — max 20MB)</p>
+          <input type="file" id="bookFileInput" accept=".pdf,.png,.jpg,.jpeg,.webp" hidden />
+        </div>
+        <div class="file-info" id="bookFileInfo" style="display:none;">
+          <span class="file-name" id="bookFileName"></span>
+          <button class="file-remove" id="bookFileRemove">✕</button>
+        </div>
+      </div>
+
+      <div class="card upload-card">
+        <div class="card-header">
+          <span class="card-icon">📋</span>
+          <h2>परीक्षा पैटर्न (वैकल्पिक)</h2>
+        </div>
+        <div class="upload-zone upload-zone-secondary" id="patternUploadZone">
+          <div class="upload-icon">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M24 32V16m0 0l-8 8m8-8l8 8"/>
+              <rect x="6" y="6" width="36" height="36" rx="8"/>
+            </svg>
+          </div>
+          <p class="upload-text">परीक्षा पैटर्न अपलोड करें</p>
+          <p class="upload-subtext">PDF या Image (वैकल्पिक)</p>
+          <input type="file" id="patternFileInput" accept=".pdf,.png,.jpg,.jpeg,.webp" hidden />
+        </div>
+        <div class="file-info" id="patternFileInfo" style="display:none;">
+          <span class="file-name" id="patternFileName"></span>
+          <button class="file-remove" id="patternFileRemove">✕</button>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div class="card settings-card">
+        <div class="card-header">
+          <span class="card-icon">⚙️</span>
+          <h2>सेटिंग्स</h2>
+        </div>
+        <div class="settings-grid">
+          <div class="input-group">
+            <label for="examName">परीक्षा का नाम</label>
+            <input type="text" id="examName" placeholder="जैसे: वार्षिक परीक्षा 2025" />
+          </div>
+          <div class="input-group">
+            <label for="className">कक्षा</label>
+            <input type="text" id="className" placeholder="जैसे: 10वीं / 12वीं" />
+          </div>
+          <div class="input-group">
+            <label for="subject">विषय</label>
+            <input type="text" id="subject" placeholder="गणित" value="गणित" />
+          </div>
+          <div class="input-group">
+            <label for="numQuestions">प्रश्नों की संख्या</label>
+            <input type="number" id="numQuestions" placeholder="15-20" value="20" min="5" max="50" />
+          </div>
+          <div class="input-group">
+            <label for="timeAllowed">समय</label>
+            <input type="text" id="timeAllowed" placeholder="3 घंटे" value="3 घंटे" />
+          </div>
+          <div class="input-group">
+            <label for="maxMarks">पूर्णांक</label>
+            <input type="number" id="maxMarks" placeholder="80" value="80" min="10" max="200" />
+          </div>
+          <div class="input-group full-width">
+            <label for="difficulty">कठिनाई स्तर</label>
+            <select id="difficulty">
+              <option value="Easy (सरल)">सरल (Easy)</option>
+              <option value="Medium (मध्यम)" selected>मध्यम (Medium)</option>
+              <option value="Hard (कठिन)">कठिन (Hard)</option>
+              <option value="Mixed (मिश्रित)">मिश्रित (Mixed)</option>
+            </select>
+          </div>
+          <div class="input-group full-width">
+            <label for="chapters">अध्याय / टॉपिक्स (वैकल्पिक)</label>
+            <input type="text" id="chapters" placeholder="जैसे: त्रिकोणमिति, बीजगणित, ज्यामिति" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Generate Button -->
+      <button class="generate-btn" id="generateBtn">
+        <span class="btn-icon">✨</span>
+        <span class="btn-text">प्रश्न पत्र बनाएँ</span>
+        <span class="btn-subtitle">Generate Question Paper</span>
+      </button>
+    </section>
+
+    <!-- Right Panel: Preview -->
+    <section class="preview-panel" id="previewPanel">
+      <!-- Empty State -->
+      <div class="empty-state" id="emptyState">
+        <div class="empty-illustration">
+          <svg viewBox="0 0 200 200" fill="none">
+            <rect x="40" y="20" width="120" height="160" rx="12" stroke="currentColor" stroke-width="2" stroke-dasharray="8 4" opacity="0.3"/>
+            <line x1="60" y1="50" x2="140" y2="50" stroke="currentColor" stroke-width="2" opacity="0.2"/>
+            <line x1="60" y1="70" x2="130" y2="70" stroke="currentColor" stroke-width="2" opacity="0.15"/>
+            <line x1="60" y1="90" x2="120" y2="90" stroke="currentColor" stroke-width="2" opacity="0.1"/>
+            <line x1="60" y1="110" x2="135" y2="110" stroke="currentColor" stroke-width="2" opacity="0.1"/>
+            <text x="100" y="150" text-anchor="middle" fill="currentColor" font-size="28" opacity="0.15">📄</text>
+          </svg>
+        </div>
+        <h3>प्रश्न पत्र यहाँ दिखेगा</h3>
+        <p>पुस्तक अपलोड करें और "प्रश्न पत्र बनाएँ" बटन दबाएँ</p>
+      </div>
+
+      <!-- Loading State -->
+      <div class="loading-state" id="loadingState" style="display:none;">
+        <div class="loader">
+          <div class="loader-ring"></div>
+          <div class="loader-ring"></div>
+          <div class="loader-ring"></div>
+        </div>
+        <h3>AI प्रश्न पत्र बना रहा है...</h3>
+        <p class="loading-hint" id="loadingHint">Gemini आपकी पुस्तक पढ़ रहा है</p>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div class="error-state" id="errorState" style="display:none;">
+        <div class="error-icon">⚠️</div>
+        <h3 id="errorTitle">त्रुटि हुई</h3>
+        <p id="errorMessage"></p>
+        <button class="retry-btn" id="retryBtn">पुनः प्रयास करें</button>
+      </div>
+
+      <!-- Paper Preview -->
+      <div class="paper-preview-wrapper" id="paperPreviewWrapper" style="display:none;">
+        <div class="preview-toolbar">
+          <h2>📄 प्रश्न पत्र प्रीव्यू</h2>
+          <button class="download-btn" id="downloadBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+            </svg>
+            PDF डाउनलोड करें
+          </button>
+        </div>
+        <div class="paper-container" id="paperContainer">
+          <!-- Generated paper will be rendered here -->
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
