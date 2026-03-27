@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>गणित प्रश्न पत्र जनरेटर | Math QS Generator</title>
+  <title>प्रश्न पत्र जनरेटर | Question Paper Generator</title>
   <meta name="description" content="Upload a Math book and generate Hindi question papers using AI. Powered by Google Gemini." />
 
   <!-- Google Fonts -->
@@ -40,8 +40,8 @@
           </svg>
         </div>
         <div class="logo-text">
-          <h1>गणित QS जनरेटर</h1>
-          <p>AI-Powered Hindi Math Paper Generator</p>
+          <h1>QS जनरेटर</h1>
+          <p>AI-Powered Question Paper Generator</p>
         </div>
       </div>
     </div>
@@ -111,11 +111,29 @@
           </div>
           <div class="input-group">
             <label for="className">कक्षा</label>
-            <input type="text" id="className" placeholder="जैसे: 10वीं / 12वीं" />
+            <select id="className">
+              <option value="">कक्षा चुनें</option>
+              <option value="कक्षा 1">कक्षा 1</option>
+              <option value="कक्षा 2">कक्षा 2</option>
+              <option value="कक्षा 3">कक्षा 3</option>
+              <option value="कक्षा 4">कक्षा 4</option>
+              <option value="कक्षा 5">कक्षा 5</option>
+              <option value="कक्षा 6">कक्षा 6</option>
+              <option value="कक्षा 7">कक्षा 7</option>
+              <option value="कक्षा 8">कक्षा 8</option>
+              <option value="कक्षा 9">कक्षा 9</option>
+              <option value="कक्षा 10" selected>कक्षा 10</option>
+              <option value="कक्षा 11">कक्षा 11</option>
+              <option value="कक्षा 12">कक्षा 12</option>
+            </select>
           </div>
           <div class="input-group">
             <label for="subject">विषय</label>
-            <input type="text" id="subject" placeholder="गणित" value="गणित" />
+            <select id="subject">
+              <option value="गणित (Mathematics)" selected>गणित (Mathematics)</option>
+              <option value="भौतिक विज्ञान (Physics)">भौतिक विज्ञान (Physics)</option>
+              <option value="रसायन विज्ञान (Chemistry)">रसायन विज्ञान (Chemistry)</option>
+            </select>
           </div>
           <div class="input-group">
             <label for="numQuestions">प्रश्नों की संख्या</label>
@@ -135,6 +153,7 @@
               <option value="Easy (सरल)">सरल (Easy)</option>
               <option value="Medium (मध्यम)" selected>मध्यम (Medium)</option>
               <option value="Hard (कठिन)">कठिन (Hard)</option>
+              <option value="Creative (रचनात्मक)">रचनात्मक (Creative)</option>
               <option value="Mixed (मिश्रित)">मिश्रित (Mixed)</option>
             </select>
           </div>

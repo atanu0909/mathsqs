@@ -104,13 +104,37 @@ function showError(msg) {
 }
 
 // ======= LOADING ANIMATION =======
-const loadingHints = [
-  "Gemini आपकी पुस्तक पढ़ रहा है...",
-  "गणित के प्रश्न तैयार हो रहे हैं...",
-  "हिंदी में अनुवाद किया जा रहा है...",
-  "प्रश्न पत्र का ढाँचा बन रहा है...",
-  "अंतिम स्पर्श दिए जा रहे हैं...",
-];
+function getLoadingHints() {
+  const subjectEl = document.getElementById("subject");
+  const subjectVal = subjectEl ? subjectEl.value : "";
+  const isPhysics = subjectVal.includes("Physics") || subjectVal.includes("भौतिक");
+  const isChemistry = subjectVal.includes("Chemistry") || subjectVal.includes("रसायन");
+
+  if (isPhysics) {
+    return [
+      "Gemini आपकी पुस्तक पढ़ रहा है...",
+      "भौतिक विज्ञान के प्रश्न तैयार हो रहे हैं...",
+      "सूत्र और संख्यात्मक प्रश्न बनाए जा रहे हैं...",
+      "प्रश्न पत्र का ढाँचा बन रहा है...",
+      "अंतिम स्पर्श दिए जा रहे हैं...",
+    ];
+  } else if (isChemistry) {
+    return [
+      "Gemini आपकी पुस्तक पढ़ रहा है...",
+      "रसायन विज्ञान के प्रश्न तैयार हो रहे हैं...",
+      "रासायनिक समीकरण और अभिक्रियाएँ तैयार हो रही हैं...",
+      "प्रश्न पत्र का ढाँचा बन रहा है...",
+      "अंतिम स्पर्श दिए जा रहे हैं...",
+    ];
+  }
+  return [
+    "Gemini आपकी पुस्तक पढ़ रहा है...",
+    "गणित के प्रश्न तैयार हो रहे हैं...",
+    "हिंदी में अनुवाद किया जा रहा है...",
+    "प्रश्न पत्र का ढाँचा बन रहा है...",
+    "अंतिम स्पर्श दिए जा रहे हैं...",
+  ];
+}
 
 let hintInterval = null;
 let progressInterval = null;
@@ -120,13 +144,14 @@ function startLoading() {
   generateBtn.disabled = true;
   let hintIdx = 0;
   let progress = 0;
+  const hints = getLoadingHints();
 
-  loadingHint.textContent = loadingHints[0];
+  loadingHint.textContent = hints[0];
   progressFill.style.width = "0%";
 
   hintInterval = setInterval(() => {
-    hintIdx = (hintIdx + 1) % loadingHints.length;
-    loadingHint.textContent = loadingHints[hintIdx];
+    hintIdx = (hintIdx + 1) % hints.length;
+    loadingHint.textContent = hints[hintIdx];
   }, 3000);
 
   progressInterval = setInterval(() => {
@@ -148,7 +173,7 @@ retryBtn.addEventListener("click", handleGenerate);
 
 async function handleGenerate() {
   if (!bookFile) {
-    showError("कृपया गणित पुस्तक की PDF या Image अपलोड करें");
+    showError("कृपया पुस्तक की PDF या Image अपलोड करें");
     return;
   }
 
@@ -445,7 +470,13 @@ downloadBtn.addEventListener("click", async () => {
 
     const opt = {
       margin: [10, 12, 10, 12],
-      filename: "गणित_प्रश्न_पत्र.pdf",
+      filename: (() => {
+        const subjectEl = document.getElementById("subject");
+        const v = subjectEl ? subjectEl.value : "";
+        if (v.includes("Physics") || v.includes("भौतिक")) return "भौतिक_विज्ञान_प्रश्न_पत्र.pdf";
+        if (v.includes("Chemistry") || v.includes("रसायन")) return "रसायन_विज्ञान_प्रश्न_पत्र.pdf";
+        return "गणित_प्रश्न_पत्र.pdf";
+      })(),
       image: { type: "jpeg", quality: 0.98 },
       html2canvas: {
         scale: 2,

@@ -80,7 +80,83 @@ app.post(
         parts.push(bufferToGenerativePart(patternFile.buffer, getMimeType(patternFile)));
       }
 
-      // Build the prompt
+      // ===== SUBJECT-SPECIFIC CONFIGURATION =====
+      const subjectLower = (subject || "").toLowerCase();
+      const isPhysics = subjectLower.includes("physics") || subjectLower.includes("भौतिक");
+      const isChemistry = subjectLower.includes("chemistry") || subjectLower.includes("रसायन");
+
+      let teacherPersona, subjectHindi, questionGuidance, subjectPaperTitle;
+
+      if (isPhysics) {
+        teacherPersona = "expert Indian physics teacher (भौतिक विज्ञान के विशेषज्ञ शिक्षक)";
+        subjectHindi = "भौतिक विज्ञान";
+        subjectPaperTitle = "भौतिक विज्ञान प्रश्न पत्र";
+        questionGuidance = `
+- Ask questions about: laws of physics, formulas, derivations, numerical problems, conceptual/reasoning questions, diagram-based questions, real-life applications
+- Include: सूत्र (formulas), संख्यात्मक प्रश्न (numerical problems), व्युत्पत्ति (derivations), आरेख प्रश्न (diagram-based), सैद्धांतिक प्रश्न (theory), अनुप्रयोग आधारित (application-based)
+- Use correct SI units and physics notation in LaTeX`;
+      } else if (isChemistry) {
+        teacherPersona = "expert Indian chemistry teacher (रसायन विज्ञान के विशेषज्ञ शिक्षक)";
+        subjectHindi = "रसायन विज्ञान";
+        subjectPaperTitle = "रसायन विज्ञान प्रश्न पत्र";
+        questionGuidance = `
+- Ask questions about: chemical reactions, equations, balancing, organic/inorganic chemistry, periodic table, chemical bonding, acids/bases, metals/non-metals
+- Include: रासायनिक समीकरण (chemical equations), संतुलन (balancing), नामकरण (nomenclature), गुणधर्म (properties), अभिक्रियाएँ (reactions), IUPAC naming
+- Use correct chemical notation in LaTeX (e.g., \\\\text{H}_2\\\\text{O}, \\\\text{NaOH})`;
+      } else {
+        teacherPersona = "expert Indian mathematics teacher (गणित के विशेषज्ञ शिक्षक)";
+        subjectHindi = "गणित";
+        subjectPaperTitle = "गणित प्रश्न पत्र";
+        questionGuidance = `
+- Ask questions about: theorems, proofs, problem solving, formulas, constructions, graphing, real-world application of concepts
+- Include: प्रमेय (theorems), सूत्र (formulas), सिद्ध करें (proofs), रचना (constructions), ग्राफ (graphs), संख्यात्मक (numerical)
+- Use correct mathematical notation in LaTeX`;
+      }
+
+      // ===== DIFFICULTY-LEVEL GUIDANCE =====
+      let difficultyGuidance = "";
+      const diffLower = (difficulty || "").toLowerCase();
+      if (diffLower.includes("easy") || diffLower.includes("सरल")) {
+        difficultyGuidance = `
+**DIFFICULTY — EASY (सरल):**
+- Direct, straightforward questions based on definitions, basic formulas, and simple recall
+- One-step or two-step problems only
+- Fill in the blanks, true/false, simple MCQs, direct formula application
+- No multi-step reasoning or complex proofs`;
+      } else if (diffLower.includes("hard") || diffLower.includes("कठिन")) {
+        difficultyGuidance = `
+**DIFFICULTY — HARD (कठिन):**
+- Multi-step, complex problems requiring deep understanding
+- Proofs, derivations, and advanced problem-solving
+- Questions that combine multiple concepts from different chapters
+- Higher-Order Thinking Skills (HOTS) questions
+- Challenging numerical problems with multiple steps`;
+      } else if (diffLower.includes("creative") || diffLower.includes("रचनात्मक")) {
+        difficultyGuidance = `
+**DIFFICULTY — CREATIVE (रचनात्मक):**
+- Unusual, thought-provoking questions that test deep conceptual understanding
+- Real-world application problems (daily life scenarios)
+- Open-ended questions encouraging multiple approaches
+- "What if" scenarios and case-study style questions
+- Cross-topic integration questions
+- Questions that require reasoning, critical thinking, and originality
+- HOTS (Higher-Order Thinking Skills) focused`;
+      } else if (diffLower.includes("mixed") || diffLower.includes("मिश्रित")) {
+        difficultyGuidance = `
+**DIFFICULTY — MIXED (मिश्रित):**
+- Include a balanced mix: ~25% easy, ~35% medium, ~25% hard, ~15% creative/HOTS
+- Start sections with easier questions and progress to harder ones
+- Ensure every difficulty level is well-represented`;
+      } else {
+        difficultyGuidance = `
+**DIFFICULTY — MEDIUM (मध्यम):**
+- Application-based questions requiring moderate problem-solving
+- Questions that test understanding, not just memorization
+- Two-to-three step problems
+- Some conceptual questions mixed with numerical/practical ones`;
+      }
+
+      // ===== PATTERN FILE INSTRUCTION =====
       let patternInstruction = "";
       if (patternFile) {
         patternInstruction = `
@@ -97,24 +173,37 @@ app.post(
 The pattern is ONLY a structural template. Generate completely NEW questions based on the textbook content while following the pattern's format.`;
       }
 
-      const prompt = `You are an expert Indian mathematics teacher.
+      // ===== BUILD THE PROMPT =====
+      const prompt = `You are an ${teacherPersona}.
 
 **YOUR PRIMARY TASK:**
-1. **READ the FIRST uploaded file** — this is a mathematics TEXTBOOK/BOOK. Study its content, topics, theorems, examples, exercises, and concepts thoroughly.
+1. **READ the ENTIRE FIRST uploaded file from FIRST PAGE to LAST PAGE** — this is a ${subjectHindi} TEXTBOOK/BOOK. Study ALL its chapters, topics, concepts, examples, exercises, formulas, and content thoroughly.
 2. **Generate a question paper** with questions derived **EXCLUSIVELY from the textbook content** (first file).
 ${patternFile ? `3. **USE the SECOND uploaded file** (exam pattern) ONLY as a structural template — follow its format, sections, marks distribution, and question types. But ALL question content must come from the TEXTBOOK (first file), NOT from the pattern.` : ""}
 
-**🚨 ABSOLUTE RULE: Every single question in the output MUST be based on topics, concepts, formulas, theorems, or exercises found in the TEXTBOOK (first file). Do NOT invent questions on topics not covered in the textbook. Do NOT copy questions from the pattern file.**
+**🚨 ABSOLUTE RULE: Every single question MUST be based on topics found in the TEXTBOOK (first file). Do NOT invent questions on uncovered topics. Do NOT copy from the pattern file.**
+
+**📖 FULL COVERAGE INSTRUCTION (VERY IMPORTANT):**
+- You MUST read the **ENTIRE textbook/PDF from beginning to end** — every single chapter, every section.
+- Generate questions that cover **ALL chapters proportionally** — do NOT focus only on the first few chapters/pages.
+- If the book has 10 chapters, questions should come from ALL 10 chapters, not just chapter 1-3.
+- Pick the most **important, exam-worthy** questions from EACH chapter — key theorems, critical formulas, important concepts, frequently-asked-in-exams type questions.
+- Distribute questions evenly across the entire book content.
 
 ${patternInstruction}
+
+${difficultyGuidance}
+
+**Subject-Specific Guidance:**
+${questionGuidance}
 
 **Settings:**
 - Number of questions: ${numQuestions || "15-20"}
 - Difficulty level: ${difficulty || "Medium (मध्यम)"}
-${chapters ? `- Focus on chapters/topics: ${chapters}` : "- Cover all available topics from the uploaded textbook content"}
+${chapters ? `- Focus on chapters/topics: ${chapters}` : "- Cover ALL chapters/topics from the uploaded textbook — distribute proportionally"}
 ${examName ? `- Exam name: ${examName}` : ""}
 ${className ? `- Class: ${className}` : ""}
-${subject ? `- Subject: ${subject}` : "- Subject: गणित (Mathematics)"}
+- Subject: ${subject || subjectHindi}
 ${timeAllowed ? `- Time allowed: ${timeAllowed}` : "- Time allowed: 3 घंटे"}
 ${maxMarks ? `- Maximum marks: ${maxMarks}` : "- Maximum marks: 80"}
 
@@ -124,21 +213,21 @@ ${maxMarks ? `- Maximum marks: ${maxMarks}` : "- Maximum marks: 80"}
 
 2. **Language**: ALL question text, instructions, and section headers MUST be in Hindi (Devanagari script). 
 
-3. **Mathematics**: ALL mathematical expressions, equations, formulas MUST be written in LaTeX notation (e.g., \\\\frac{1}{2}, x^2 + y^2 = r^2, \\\\int_0^1 f(x) dx).
+3. **Formulas & Notation**: ALL mathematical/scientific expressions, equations, formulas MUST be written in LaTeX notation (e.g., \\\\frac{1}{2}, x^2 + y^2 = r^2, \\\\int_0^1 f(x) dx, \\\\text{H}_2\\\\text{O}).
 
 4. **Question Source**: ALL questions MUST be derived from the textbook (first file) content. Create questions based on:
-   - Definitions and theorems from the textbook
+   - Definitions and key concepts from the textbook
    - Similar problems to the exercises in the textbook
-   - Concepts and formulas explained in the textbook chapters
-   - Examples and solved problems in the textbook (create variations, do not copy verbatim)
+   - Formulas and important results explained in the textbook chapters
+   - Examples and solved problems (create variations, do not copy verbatim)
    Do NOT ask questions about topics NOT present in the textbook.
 
 5. **JSON Structure**:
 {
-  "paperTitle": "गणित प्रश्न पत्र",
+  "paperTitle": "${subjectPaperTitle}",
   "examName": "${examName || "वार्षिक परीक्षा"}",
   "className": "${className || ""}",
-  "subject": "${subject || "गणित"}",
+  "subject": "${subject || subjectHindi}",
   "timeAllowed": "${timeAllowed || "3 घंटे"}",
   "maxMarks": ${maxMarks || 80},
   "generalInstructions": [
@@ -153,7 +242,7 @@ ${maxMarks ? `- Maximum marks: ${maxMarks}` : "- Maximum marks: 80"}
       "questions": [
         {
           "number": 1,
-          "text": "Question text in Hindi with LaTeX math like \\\\(x^2 + 1\\\\)",
+          "text": "Question text in Hindi with LaTeX like \\\\(x^2 + 1\\\\)",
           "marks": 1,
           "type": "mcq",
           "options": ["विकल्प अ", "विकल्प ब", "विकल्प स", "विकल्प द"]
@@ -182,11 +271,11 @@ ${maxMarks ? `- Maximum marks: ${maxMarks}` : "- Maximum marks: 80"}
    - Short Answer (लघु उत्तरीय) — 2-3 marks each
    - Long Answer (दीर्घ उत्तरीय) — 4-5 marks each
 
-7. **Math expressions**: Use inline LaTeX: \\\\(expression\\\\) within text. Use display LaTeX: \\\\[expression\\\\] for standalone equations.
+7. **Expressions**: Use inline LaTeX: \\\\(expression\\\\) within text. Use display LaTeX: \\\\[expression\\\\] for standalone equations.
 
 8. Ensure the total marks add up to the maxMarks specified.
 
-9. Make questions educationally meaningful — not trivial, not impossibly hard.
+9. Make questions educationally meaningful, important, and exam-worthy.
 
 Return ONLY the JSON object. No additional text.`;
 
