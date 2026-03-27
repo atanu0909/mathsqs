@@ -7,8 +7,6 @@ let bookFile = null;
 let patternFile = null;
 
 // DOM Elements
-const apiKeyInput = document.getElementById("apiKey");
-const toggleApiKeyBtn = document.getElementById("toggleApiKey");
 const bookUploadZone = document.getElementById("bookUploadZone");
 const bookFileInput = document.getElementById("bookFileInput");
 const bookFileInfo = document.getElementById("bookFileInfo");
@@ -31,10 +29,7 @@ const loadingHint = document.getElementById("loadingHint");
 const progressFill = document.getElementById("progressFill");
 const retryBtn = document.getElementById("retryBtn");
 
-// ======= API KEY TOGGLE =======
-toggleApiKeyBtn.addEventListener("click", () => {
-  apiKeyInput.type = apiKeyInput.type === "password" ? "text" : "password";
-});
+
 
 // ======= FILE UPLOAD HANDLING =======
 function setupUploadZone(zone, input, setFile, fileInfo, fileNameEl, removeBtn) {
@@ -152,11 +147,6 @@ generateBtn.addEventListener("click", handleGenerate);
 retryBtn.addEventListener("click", handleGenerate);
 
 async function handleGenerate() {
-  const apiKey = apiKeyInput.value.trim();
-  if (!apiKey) {
-    showError("कृपया Gemini API Key दर्ज करें");
-    return;
-  }
   if (!bookFile) {
     showError("कृपया गणित पुस्तक की PDF या Image अपलोड करें");
     return;
@@ -166,7 +156,6 @@ async function handleGenerate() {
 
   try {
     const formData = new FormData();
-    formData.append("apiKey", apiKey);
     formData.append("bookFile", bookFile);
     if (patternFile) formData.append("patternFile", patternFile);
 

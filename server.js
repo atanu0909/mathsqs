@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const multer = require("multer");
 const cors = require("cors");
@@ -51,10 +52,11 @@ app.post(
   ]),
   async (req, res) => {
     try {
-      const { apiKey, numQuestions, difficulty, chapters, examName, className, subject, timeAllowed, maxMarks } = req.body;
+      const { numQuestions, difficulty, chapters, examName, className, subject, timeAllowed, maxMarks } = req.body;
 
+      const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
-        return res.status(400).json({ error: "Gemini API Key is required." });
+        return res.status(500).json({ error: "Server misconfiguration: GEMINI_API_KEY is not set." });
       }
 
       if (!req.files?.bookFile?.[0]) {
@@ -227,6 +229,12 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-app.listen(PORT, () => {
-  console.log(`✅ Server running at http://localhost:${PORT}`);
-});
+// Only listen when running locally (not on Vercel)
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`✅ Server running at http://localhost:${PORT}`);
+  });
+}
+
+// Export for Vercel serverless
+module.exports = app;
