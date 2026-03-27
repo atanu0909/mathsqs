@@ -185,7 +185,7 @@ async function handleGenerate() {
     if (patternFile) formData.append("patternFile", patternFile);
 
     // Gather settings
-    const fields = ["examName", "className", "subject", "numQuestions", "timeAllowed", "maxMarks", "difficulty", "chapters"];
+    const fields = ["examName", "className", "subject", "numQuestions", "timeAllowed", "maxMarks", "difficulty", "chapters", "includeAnswers"];
     fields.forEach((f) => {
       const el = document.getElementById(f);
       if (el && el.value) formData.append(f, el.value);
@@ -294,6 +294,56 @@ function renderPaper(paper) {
       ✦ शुभकामनाएँ ✦
     </div>
   `;
+
+  // Answer Key Section (appended after all questions)
+  const includeAnswersEl = document.getElementById("includeAnswers");
+  const showAnswers = includeAnswersEl && includeAnswersEl.value === "yes";
+
+  if (showAnswers && paper.sections) {
+    let hasAnyAnswer = false;
+    let answerHtml = `
+      <div class="answer-key-section" style="margin-top:2.5rem; padding-top:1.5rem; border-top:3px double #333;">
+        <div style="text-align:center; margin-bottom:1.5rem;">
+          <h2 style="color:#1a1a2e; font-size:1.4rem; margin:0;">✦ उत्तर कुंजी (Answer Key) ✦</h2>
+        </div>
+    `;
+
+    paper.sections.forEach((section) => {
+      let sectionHasAnswers = false;
+      let sectionAnswerHtml = `
+        <div style="margin-bottom:1rem;">
+          <h3 style="color:#2d3436; font-size:1.1rem; margin-bottom:0.5rem; border-bottom:1px solid #636e72; padding-bottom:0.3rem; font-weight:700;">
+            ${escapeHtml(section.name)}${section.title ? " — " + escapeHtml(section.title) : ""}
+          </h3>
+      `;
+
+      if (section.questions) {
+        section.questions.forEach((q) => {
+          if (q.answer) {
+            sectionHasAnswers = true;
+            hasAnyAnswer = true;
+            sectionAnswerHtml += `
+              <div style="margin-bottom:0.6rem; padding-left:0.5rem;">
+                <strong style="color:#000;">प्र. ${q.number}:</strong>
+                <span style="color:#2d3436; margin-left:0.3rem;">${formatMath(q.answer)}</span>
+              </div>
+            `;
+          }
+        });
+      }
+
+      sectionAnswerHtml += `</div>`;
+      if (sectionHasAnswers) {
+        answerHtml += sectionAnswerHtml;
+      }
+    });
+
+    answerHtml += `</div>`;
+
+    if (hasAnyAnswer) {
+      html += answerHtml;
+    }
+  }
 
   paperContainer.innerHTML = html;
 

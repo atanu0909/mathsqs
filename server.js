@@ -52,7 +52,7 @@ app.post(
   ]),
   async (req, res) => {
     try {
-      const { numQuestions, difficulty, chapters, examName, className, subject, timeAllowed, maxMarks } = req.body;
+      const { numQuestions, difficulty, chapters, examName, className, subject, timeAllowed, maxMarks, includeAnswers } = req.body;
 
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
@@ -160,17 +160,26 @@ app.post(
       let patternInstruction = "";
       if (patternFile) {
         patternInstruction = `
-**⚠️ EXAM PATTERN PROVIDED (Second File):**
-दूसरी फाइल एक परीक्षा पैटर्न/सैंपल पेपर है। इसका उपयोग **केवल प्रश्न पत्र के ढाँचे (structure/format)** के लिए करें:
-- खंडों की संख्या और नाम (Number of sections and their names)
-- प्रत्येक खंड में प्रश्नों की संख्या (Number of questions per section)
-- प्रश्नों के प्रकार — MCQ, लघु उत्तरीय, दीर्घ उत्तरीय आदि (Question types)
-- अंक वितरण (Marks distribution per question and section)
-- सामान्य निर्देश (General instructions format)
+**⚠️ EXAM PATTERN PROVIDED (Second File) — FOLLOW IT EXACTLY:**
+दूसरी फाइल एक परीक्षा पैटर्न/सैंपल पेपर है। आपको इसके **ढाँचे को हूबहू (exactly) follow** करना है:
 
-**🚫 STRICTLY DO NOT copy or rephrase any questions from the pattern file.**
-**✅ ALL question content (text, numbers, equations, options) MUST come ONLY from the FIRST file (textbook/book PDF).**
-The pattern is ONLY a structural template. Generate completely NEW questions based on the textbook content while following the pattern's format.`;
+**🔹 MUST COPY EXACTLY FROM PATTERN:**
+1. **सामान्य निर्देश (General Instructions):** Copy the EXACT same general instructions text as written in the pattern file. If the pattern says "सभी प्रश्न अनिवार्य हैं" or any other instruction, reproduce it word-for-word in the "generalInstructions" array.
+2. **खंडों की संख्या और नाम (Sections):** Use the EXACT SAME section names (e.g., खंड-अ, खंड-ब, etc.), section titles, and section-level instructions as in the pattern.
+3. **प्रत्येक खंड में प्रश्नों की संख्या (Questions per section):** Match the EXACT number of questions in each section as the pattern.
+4. **प्रश्नों के प्रकार (Question types per section):** If section A in the pattern has MCQs, your section A must have MCQs. If section C has long-answer, yours must too.
+5. **अंक वितरण (Marks distribution):** Each question MUST carry the EXACT same marks as in the pattern. If pattern has Q1-Q5 worth 1 mark each, yours must too. If pattern has Q15 worth 5 marks, yours must too.
+6. **कुल अंक (Total marks):** The total marks of the generated paper MUST equal the total marks in the pattern.
+7. **समय (Time allowed):** Use the same time as mentioned in the pattern.
+8. **Paper header info:** Use the same exam name, class, subject formatting as the pattern.
+9. **Internal choice:** If the pattern provides internal choices (e.g., "अथवा/OR" — attempt any one), provide the same internal choice structure.
+10. **Question numbering:** Follow the same numbering scheme as the pattern.
+
+**🚫 DO NOT COPY FROM PATTERN:**
+- Do NOT copy or rephrase any actual **question content** (question text, numbers, equations, MCQ options) from the pattern file.
+- ALL question content (the actual questions, problems, equations, options) MUST come ONLY from the FIRST file (textbook).
+
+**In summary:** The PATTERN gives you the skeleton (structure, marks, instructions). The TEXTBOOK gives you the flesh (actual question content). Combine both to produce the final paper.`;
       }
 
       // ===== BUILD THE PROMPT =====
@@ -198,6 +207,7 @@ ${difficultyGuidance}
 ${questionGuidance}
 
 **Settings:**
+${patternFile ? `⚠️ IF PATTERN FILE IS PROVIDED: The pattern file's structure (sections, marks, time, instructions, question count) takes ABSOLUTE PRIORITY over the settings below. Use settings below ONLY as fallback if pattern doesn't specify them.` : ""}
 - Number of questions: ${numQuestions || "15-20"}
 - Difficulty level: ${difficulty || "Medium (मध्यम)"}
 ${chapters ? `- Focus on chapters/topics: ${chapters}` : "- Cover ALL chapters/topics from the uploaded textbook — distribute proportionally"}
@@ -222,7 +232,33 @@ ${maxMarks ? `- Maximum marks: ${maxMarks}` : "- Maximum marks: 80"}
    - Examples and solved problems (create variations, do not copy verbatim)
    Do NOT ask questions about topics NOT present in the textbook.
 
-5. **JSON Structure**:
+${patternFile ? `5. **JSON Structure**: Derive the structure ENTIRELY from the pattern file. The JSON must have:
+{
+  "paperTitle": "(from pattern)",
+  "examName": "(from pattern)",
+  "className": "(from pattern)",
+  "subject": "(from pattern)",
+  "timeAllowed": "(from pattern)",
+  "maxMarks": (from pattern),
+  "generalInstructions": ["(copy EXACT instructions from pattern word-for-word)"],
+  "sections": [
+    {
+      "name": "(EXACT section name from pattern)",
+      "title": "(EXACT section title from pattern)",
+      "instructions": "(EXACT section instructions from pattern)",
+      "questions": [
+        {
+          "number": 1,
+          "text": "NEW question from textbook in Hindi",
+          "marks": (SAME marks as in pattern for this question number),
+          "type": "mcq/short/long (SAME type as in pattern)"${includeAnswers === "yes" ? ',\n          "answer": "correct answer/solution"' : ''}${`
+          // Include "options" array ONLY for MCQ type questions`}
+        }
+      ]
+    }
+  ]
+}
+The number of sections, number of questions per section, marks per question, and question types MUST exactly match the pattern file.` : `5. **JSON Structure**:
 {
   "paperTitle": "${subjectPaperTitle}",
   "examName": "${examName || "वार्षिक परीक्षा"}",
@@ -245,7 +281,7 @@ ${maxMarks ? `- Maximum marks: ${maxMarks}` : "- Maximum marks: 80"}
           "text": "Question text in Hindi with LaTeX like \\\\(x^2 + 1\\\\)",
           "marks": 1,
           "type": "mcq",
-          "options": ["विकल्प अ", "विकल्प ब", "विकल्प स", "विकल्प द"]
+          "options": ["विकल्प अ", "विकल्प ब", "विकल्प स", "विकल्प द"]${includeAnswers === "yes" ? ',\n          "answer": "(ब) correct answer"' : ''}
         }
       ]
     },
@@ -258,14 +294,14 @@ ${maxMarks ? `- Maximum marks: ${maxMarks}` : "- Maximum marks: 80"}
           "number": 5,
           "text": "Question in Hindi...",
           "marks": 2,
-          "type": "short"
+          "type": "short"${includeAnswers === "yes" ? ',\n          "answer": "step-by-step solution"' : ''}
         }
       ]
     }
   ]
-}
+}`}
 
-6. **Question types** ${patternFile ? "(follow the pattern file's structure if provided)" : "(vary as appropriate)"}:
+${patternFile ? `6. **Question types**: Follow the EXACT types from the pattern file. Do NOT use the defaults below unless the pattern doesn't specify types.` : `6. **Question types** (vary as appropriate):`}
    - MCQ (बहुविकल्पीय) — 1 mark each
    - Very Short Answer (अति लघु उत्तरीय) — 1-2 marks each
    - Short Answer (लघु उत्तरीय) — 2-3 marks each
@@ -273,9 +309,15 @@ ${maxMarks ? `- Maximum marks: ${maxMarks}` : "- Maximum marks: 80"}
 
 7. **Expressions**: Use inline LaTeX: \\\\(expression\\\\) within text. Use display LaTeX: \\\\[expression\\\\] for standalone equations.
 
-8. Ensure the total marks add up to the maxMarks specified.
+8. Ensure the total marks add up to the maxMarks specified${patternFile ? " (use the pattern's total marks)" : ""}.
 
 9. Make questions educationally meaningful, important, and exam-worthy.
+
+${includeAnswers === "yes" ? `10. **ANSWERS (VERY IMPORTANT):** For EVERY question, include an "answer" field in the JSON with the correct answer/solution.
+   - For MCQs: provide the correct option text (e.g., "(ब) 45°")
+   - For short/long answer questions: provide a concise but complete solution with steps
+   - Use LaTeX notation for any math/science in the answers too
+   - The answer field should contain a clear, correct solution that a student can use to verify their work` : ""}
 
 Return ONLY the JSON object. No additional text.`;
 
@@ -289,7 +331,11 @@ Return ONLY the JSON object. No additional text.`;
       // Clean the response — strip markdown code fences if present
       text = text.replace(/```json\s*/gi, "").replace(/```\s*/gi, "").trim();
 
-      // Parse JSON
+      // Sanitize JSON — fix common Gemini issues with escape characters
+      // Remove control characters (except \n, \r, \t which are valid in JSON strings)
+      text = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
+
+      // Parse JSON with robust fallback
       let paperData;
       try {
         paperData = JSON.parse(text);
@@ -297,7 +343,16 @@ Return ONLY the JSON object. No additional text.`;
         // Try to extract JSON from the text
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-          paperData = JSON.parse(jsonMatch[0]);
+          let jsonStr = jsonMatch[0];
+          // Fix invalid escape sequences: replace \( \) \[ \] with \\( \\) etc.
+          jsonStr = jsonStr.replace(/\\([^"\\\//bfnrtu])/g, '\\\\$1');
+          try {
+            paperData = JSON.parse(jsonStr);
+          } catch (e2) {
+            // Last resort: try to fix by removing problematic backslashes
+            jsonStr = jsonMatch[0].replace(/\\(?=[^"\\\//bfnrtu{])/g, '\\\\');
+            paperData = JSON.parse(jsonStr);
+          }
         } else {
           throw new Error("Failed to parse Gemini response as JSON. Raw response: " + text.substring(0, 500));
         }
